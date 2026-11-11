@@ -5,7 +5,7 @@ datasets/
 *.csv
 
 checkpoints/
-logs/
+#logs/
 
 __pycache__/
 *.py[cod]
