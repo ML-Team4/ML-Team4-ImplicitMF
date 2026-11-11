@@ -26,6 +26,7 @@ class ImplicitMF:
         iteration: int = 20,  # epochs
         random_state: int = 777,  
         top_k: int = 10, # the number of items to recommend
+        propensity_method: str = 'ips' # ['ips', 'snips']
     ):
         self.k_dim = k_dim
         self.alpha = alpha
@@ -34,6 +35,7 @@ class ImplicitMF:
         self.iteration = iteration
         self.random_state = random_state
         self.top_k = top_k
+        self.propensity_method = propensity_method
 
         self.user_latent_matrix: np.ndarray | None = None
         self.item_latent_matrix: np.ndarray | None = None
@@ -118,16 +120,13 @@ class ImplicitMF:
             self.user_latent_matrix[u] = np.linalg.solve(A, b)
 
     def _update_items_als(self, D_csc: csc_matrix):
-        """
-        아이템 잠재 벡터 업데이트 (ALS Step + 1회 청취 아이템 Sherman-Morrison 고속 벡터화)
-        """
         num_items = self.item_latent_matrix.shape[0]
         X = self.user_latent_matrix
         XTX_reg = X.T @ X + self.reg_weight * np.eye(self.k_dim, dtype=np.float32)
 
         A_inv = np.linalg.inv(XTX_reg)
-        Z = X @ A_inv # shape: (num_users, k_dim)
-        s = (X * Z).sum(axis=1) # shape: (num_users,)
+        Z = X @ A_inv 
+        s = (X * Z).sum(axis=1) 
 
         item_degrees = np.diff(D_csc.indptr)
 
@@ -181,6 +180,12 @@ class ImplicitMF:
             val_users, val_targets_table = val_data
             val_target_dict = self._parse_target_dict(val_targets_table)
 
+        # 행렬을 COO(Coordinate) 로 변환해서 (user, item, listen_count) 1D 배열 추출
+        coo = counts.tocoo()
+        u_arr = coo.row
+        i_arr = coo.col
+        r_arr = coo.data.astype(np.float32)
+
         # IPS = 1 / P_i 계산
         if self.gamma > 0.0 and train_listener_counts is not None:
             pop = train_listener_counts.astype(np.float32)
@@ -190,15 +195,12 @@ class ImplicitMF:
         else:
             ips = np.ones(num_items, dtype=np.float32)
 
-        # 행렬을 COO(Coordinate) 으로 변환해서 (user, item, listen_count) 1D 배열 추출
-        coo = counts.tocoo()
-        u_arr = coo.row
-        i_arr = coo.col
-        r_arr = coo.data.astype(np.float32)
+        if self.propensity_method == 'snips':
+            pass
 
         # user-item confidence 계산
         # c_ui = 1 + alpha * log(1 + listen_count) ... (np.log1p: log(1+x))
-        # 희소 오차 잔차 행렬 d_ui = c_ui - 1 생성
+        # 희소 오차 잔차 행렬 d_ui = c_ui - 1 
         w_i = ips[i_arr]
         d_ui = (self.alpha * w_i * np.log1p(r_arr)).astype(np.float32)
 
@@ -220,7 +222,6 @@ class ImplicitMF:
         best_item_emb = None
         self.history = []
 
-        rng = np.random.default_rng(self.random_state)
         # ========================
         # 학습 시작
         # ========================
@@ -234,7 +235,6 @@ class ImplicitMF:
 
             t_fit = time.time() - t0
 
-            # 4. C++ 엔진에서 계산된 Latent Matrix를 클래스 멤버 변수로 동기화
             self.user_latent_matrix = np.asarray(als_engine.user_factors)
             self.item_latent_matrix = np.asarray(als_engine.item_factors)
 
@@ -358,7 +358,6 @@ class ImplicitMF:
                     hits = len(set(top_k_items) & truth)
                     recalls[k].append(hits / len(truth))
 
-                # Top-10 기준 ARP 수집
                 arps.append(np.mean(train_listener_counts[top_max_sorted[:10]]))
 
         metrics = {
@@ -417,11 +416,9 @@ class ImplicitMF:
                     self.alpha,
                     self.gamma,
                     self.reg_weight,
-                    self.learning_rate,
-                    self.batch_size,
-                    self.n_negatives,
                     self.iteration,
                     self.top_k,
+                    self.propensity_method,
                 ]
             ),
         )
@@ -449,11 +446,9 @@ class ImplicitMF:
         self.alpha = float(config[1])
         self.gamma = float(config[2])
         self.reg_weight = float(config[3])
-        self.learning_rate = float(config[4])
-        self.batch_size = int(config[5])
-        self.n_negatives = int(config[6])
-        self.iteration = int(config[7])
-        self.top_k = int(config[8])
+        self.iteration = int(config[4])
+        self.top_k = int(config[5])
+        self.propensity_method = int(config[6])
 
         print(
             f"[ImplicitMF] Success to load: U{self.user_latent_matrix.shape}, I{self.item_latent_matrix.shape}"

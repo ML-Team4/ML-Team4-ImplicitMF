@@ -20,7 +20,7 @@ def grid_serach():
     param_grid = {
         "k_dim": [64, 128, 256],         
         "alpha": [10.0, 20.0, 40.0],     
-        "gamma": [0.0, 0.1, 0.2, 0.3],   
+        "gamma": [0.0],   
         "reg_weight": [0.001, 0.01, 0.05], 
         "iteration": [20],               
         "random_state": [777],
