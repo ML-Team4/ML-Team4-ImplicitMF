@@ -1,0 +1,15 @@
+
+datasets/
+*.zip
+*.gz
+*.csv
+
+checkpoints/
+logs/
+
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+*.egg-info/

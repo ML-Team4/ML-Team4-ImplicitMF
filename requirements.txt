@@ -1,0 +1,4 @@
+implicit>=0.7.3
+numpy>=2.0.0
+pyarrow>=26.0.0
+scipy>=1.18.0
