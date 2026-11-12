@@ -143,7 +143,7 @@ k_dim,alpha,gamma,reg_weight,iteration,random_state,top_k,best_epoch,best_val_re
 <details>
 <summary>무작위 추천 성능</summary>
 
-이때, 무작위 추천의 `Recall@K` 기댓값은 다음을 통해 계산한다. 
+이때, 무작위 추천의 `Recall@K` 기댓값은 다음을 통해 계산한다.  
 
 $$
 \mathbb{E}[\text{Recall@}K_{\text{random}}] = \frac{K}{\text{아이템 수}} = \frac{K}{1,525,005}
