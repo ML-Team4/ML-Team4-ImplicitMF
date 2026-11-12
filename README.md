@@ -33,7 +33,7 @@ python -m Scripts --user_idx user_idx --gamma gamma [--compare] --top_k top_k
 | :---: | :---: | :---: | :---: | 
 | `--user_idx` | `int`, `list[int]` | `0` | 추천을 생성할 유저 인덱스. 공백으로 구분하여 다수를 지정 |
 | `--gamma` | `float` | `0.2` | IPS 편향 보정 강도 ($\in \{0.0, 0.1, 0.2, 0.3, 0.4, 0.5\}$) |
-| '--compare'| `flag` | `False` | Baseline($\gamma = 0.0$) 과 `--gamma` 모델의 추천 결과 동시 비교 |
+| `--compare`| `flag` | `False` | Baseline($\gamma = 0.0$) 과 `--gamma` 모델의 추천 결과 동시 비교 |
 | `--top_k` | `int` | 10 | 유저당 추천할 곡 수 | 
 
 <details>
@@ -83,7 +83,7 @@ user_idx,gamma,rank,item_idx,title,artist,train_listener_count
 
 ### Find $\gamma$
 
-앞서 도출한 Baseline 모델로부터, $\gamma \in \{0.0, 0.1, 0.2, 0.3, 0.4, 0.5\}$ 에 따라 각 성능을 비교한다. 마찬가지로 이는 validation_targets.csv`, `validation_users.csv` 에 기반하여 `Recall@10` 을 기준으로 한다.
+앞서 도출한 Baseline 모델로부터, $\gamma \in \{0.0, 0.1, 0.2, 0.3, 0.4, 0.5\}$ 에 따라 각 성능을 비교한다. 마찬가지로 이는 `validation_targets.csv`, `validation_users.csv` 에 기반하여 `Recall@10` 을 기준으로 한다.
 
 | $\gamma$ | R@10 | ARP | R@50 | R100 | 
 | :---: | :---: | :---: | :---: | :---: | 
@@ -117,9 +117,11 @@ user_idx,gamma,rank,item_idx,title,artist,train_listener_count
 <summary>무작위 추천 성능</summary>
 
 이때, 무작위 추천의 `Recall@K` 기댓값은 다음을 통해 계산한다. 
+
 $$
 \mathbb{E}[\text{Recall@}K_{\text{random}}] = \frac{K}{\text{아이템 수}} = \frac{K}{1,525,005}
 $$
+
 </details>
 
 이후 실제 테스트 데이터셋을 통한 평가에서는 $\gamma = 0.2$ 를 선정하여 진행한다.  

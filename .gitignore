@@ -1,8 +1,9 @@
 
 datasets/
+datasets/*.csv
 *.zip
 *.gz
-*.csv
+
 
 checkpoints/
 #logs/
