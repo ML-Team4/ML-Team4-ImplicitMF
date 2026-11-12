@@ -1,5 +1,13 @@
 # Train Implcit-MF based ALS with IPS
 
+> - Implicit-MF & ALS optimization
+> [Hu, Y., Koren, Y., & Volinsky, C. (2008, December). Collaborative filtering for implicit feedback datasets. In 2008 Eighth IEEE international conference on data mining (pp. 263-272). Ieee.](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=4781121)
+> - IPS framework
+> [Schnabel, Tobias, et al. "Recommendations as treatments: Debiasing learning and evaluation." international conference on machine learning. PMLR, 2016.](https://proceedings.mlr.press/v48/schnabel16.pdf)
+> - IPS for Implicit feedback 
+> [Saito, Yuta, et al. "Unbiased recommender learning from missing-not-at-random implicit feedback." Proceedings of the 13th international conference on web search and data mining. 2020.](https://dl.acm.org/doi/pdf/10.1145/3336191.3371783)
+> 
+
 여기선 Implicit Feedback (청취횟수) 기반의 추천시스템 Implicit Matrix factorization (Implicit ALS)의 학습 메커니즘, 추천/평가 연산 구조를 설명한다. 
 
 ## Data Formulation
@@ -130,7 +138,7 @@ $$
 <summary>Code</summary>
 $x_u = A^{-1}b$ 꼴이므로, 선형방정식 $Ax_u = b$ 을 계산하여 구한다. (표기 간편을 위해 $C_u = C_u^{\text{IPS}}$)
 
-$A = Y^T C_u Y + \lambda I$ 에 대해, $C_u = I_N + D_u$ ($d_ui = c_ui - 1$) 로 분해하여 전개한다. 
+$A = Y^T C_u Y + \lambda I$ 에 대해, $C_u = I_N + D_u$ ($d_ui = c_ui - 1$) 로 분해하여 전개한다. (기존 $C_u$ 를 그대로 사용할 시, 전체 유저-아이템 에 대해 연상량이 급증하므로, 이와 같이 분해하여 계산한다.)
 
 $$
 \begin{align}
@@ -215,6 +223,8 @@ $$
 \mathrm{ARP} = \frac{1}{\vert\mathcal{U}\vert}\sum_{u \in \mathcal{U}} \left(\frac{1}{K}\sum_{i \in R_u^{(K)}}\mathrm{Pop}(i)\right)
 $$
 
-- $\mathcal{U} (\vert\mathcal{U}\vert = M')$ : 평가에 사용될 데이터셋에서의 유저 인덱스 집합 
+- $\mathcal{U}~(\vert\mathcal{U}\vert = M')$ : 평가에 사용될 데이터셋에서의 유저 인덱스 집합 
+- $R_u^{(K)}$ : 유저 $u$ 에 대해 추천된 $K$ 개의 아이템 집합
+- $T_u$ : 유저 $u$ 에 대한 Ground Truth 아이템 집합
 
 두 지표 모두 모든 유저에 대해 평균을 내어 산출한다. 

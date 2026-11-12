@@ -134,7 +134,6 @@ class ImplicitMF:
             self.user_latent_matrix[u] = np.linalg.solve(A, b)
 
     def _update_items_als(self, D_csc: csc_matrix):
-        num_items = self.item_latent_matrix.shape[0]
         X = self.user_latent_matrix
         XTX_reg = X.T @ X + self.reg_weight * np.eye(self.k_dim, dtype=np.float32)
 
