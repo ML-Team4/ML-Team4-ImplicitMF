@@ -115,6 +115,9 @@ d_ui = alpha * w_i * np.log1p(r_ui)
 
 WALS(Weighted Alternating Least Squares) 를 사용하여 최적화를 진행한다. 
 
+학습 시작 전 사용자 잠재 행렬, 아이템 잠재 행렬은 `np.random.default_rng(random_state)`를 통해 시드를 고정한 뒤, 각 가중치를 정규분포 $\mathcal{N}(0, \frac{1}{k})$ 로 초기화하여 수행한다.
+
+
 ### 사용자 잠재 벡터
 
 전체 아이템 행렬 $Y \in \mathbb{R}^{N \times k}$ 를 고정한 채, 유저 잠재 행렬에 대해 다음과 같이 계산한다. 

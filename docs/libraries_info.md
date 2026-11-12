@@ -1,4 +1,4 @@
-# External Libraries Details
+# External Libraries or modules Details
 
 실제 구현에서 사용된 외부 모듈, 클래스, 함수 등에 대한 설명을 진행한다. 
 
