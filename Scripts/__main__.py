@@ -17,6 +17,8 @@ import gc
 import numpy as np
 import pyarrow as pa
 
+import configs
+
 CHECKPOINT_DIR = ROOT_DIR / "checkpoints"
 
 def get_user_history(user_idx: int, counts, items: pa.Table, top_n: int = 5) -> tuple[int, list[dict]]:
@@ -54,9 +56,9 @@ def recommend_for_gamma(
     items: pa.Table,
     top_k: int,
 ) -> tuple[dict[int, list[dict]], list[dict]]:
-    weight_path = CHECKPOINT_DIR / f"implicit_mf_gamma_{gamma}.npz"
+    weight_path = configs.CHECKPOINT_DIR / f"implicit_mf_gamma_{gamma}.npz"
     if not weight_path.exists():
-        raise FileNotFoundError(f"체크포인트 파일을 찾을 수 없습니다: {weight_path}")
+        raise FileNotFoundError(f"no file exists: {weight_path}")
 
     model = ImplicitMF()
     model.load_model(weight_path)
@@ -72,11 +74,11 @@ def recommend_for_gamma(
 
         avg_pop = float(np.mean([m["listeners"] for m in metas])) if metas else 0.0
         print(
-            f"\n★ [User {u} | gamma={gamma:.2f}] Top-{top_k} 추천 결과 "
+            f"\n[User {u} | gamma={gamma:.2f}] Top-{top_k} 추천 결과 "
             f"(추천곡 평균 청취자 수: {avg_pop:.1f}명)"
         )
         print(f"{'Rank':>4} | {'Item ID':>8} | {'Track Title':<34} | {'Artist':<22} | {'Listeners':>10}")
-        print("-" * 88)
+        print("-" * 90)
 
         for rank, m in enumerate(metas, 1):
             print(
@@ -94,7 +96,7 @@ def recommend_for_gamma(
                     "train_listener_count": m["listeners"],
                 }
             )
-        print("-" * 88)
+        print("-" * 90)
 
     del model
     gc.collect()
@@ -107,7 +109,6 @@ def main():
     parser.add_argument("--gamma", type=float, default=0.2, help="IPS 편향 보정 강도 (기본값: 0.2)")
     parser.add_argument("--compare", action="store_true", help="Baseline(0.0)과 지정 gamma 비교")
     parser.add_argument("--top_k", type=int, default=10, help="추천 곡 수 (기본값: 10)")
-    parser.add_argument("--output", type=str, default="logs/recommendations.csv", help="CSV 저장 경로")
     args = parser.parse_args()
 
     counts, items, _ = prepare_for_test()
@@ -116,7 +117,7 @@ def main():
     histories: dict[int, tuple[int, list[dict]]] = {}
     for u in args.user_idx:
         if u < 0 or u >= num_users:
-            raise ValueError(f"유효하지 않은 user_idx={u} 입니다. (허용 범위: 0 ~ {num_users - 1})")
+            raise ValueError(f"invalide user_idx={u}. (user_idx: 0 ~ {num_users - 1})")
         total_tracks, hist_metas = get_user_history(u, counts, items, top_n=5)
         histories[u] = (total_tracks, hist_metas)
         print_user_history(u, total_tracks, hist_metas)
@@ -137,18 +138,16 @@ def main():
         recs_by_gamma[g] = user_map
         exported_rows.extend(flat_rows)
 
-    output_path = ROOT_DIR / args.output
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
     if exported_rows:
-        with open(output_path, "w", newline="", encoding="utf-8-sig") as f:
+        csv_path = configs.RESULT_DIR/ "recommendations.csv"
+        with open(csv_path, "w", newline="", encoding="utf-8-sig") as f:
             writer = csv.DictWriter(f, fieldnames=list(exported_rows[0].keys()))
             writer.writeheader()
             writer.writerows(exported_rows)
-        print(f"\n추천 결과 CSV 저장 완료: {output_path}")
+        print(f"\nsuccess to save: {csv_path}")
 
         export_markdown_report(
-            md_path=output_path.with_suffix(".md"),
+            md_path=configs.RESULT_DIR / "recommendations.md",
             user_indices=args.user_idx,
             histories=histories,
             recs_by_gamma=recs_by_gamma,
@@ -156,7 +155,7 @@ def main():
         )
 
         plot_recommendation_comparison(
-            save_dir=output_path.parent,
+            save_dir=configs.RESULT_DIR,
             user_indices=args.user_idx,
             recs_by_gamma=recs_by_gamma,
             top_k=args.top_k,

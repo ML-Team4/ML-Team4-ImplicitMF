@@ -3,14 +3,8 @@ from load_datasets import load_data
 import csv
 import json
 from itertools import product
-from pathlib import Path
 
-CHECKPOINT_DIR = Path("checkpoints")
-LOG_DIR = Path("logs")
-CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
-LOG_DIR.mkdir(parents=True, exist_ok=True)
-
-MODEL_WEIGHT_DIR = Path("./checkpoints/grid_best_implicit_mf.npz")
+import configs
 
 def prepare_for_train():
     datasets = load_data()
@@ -79,14 +73,14 @@ def grid_serach():
         if res["best_val_recall@10"] > best_recall_10:
             best_recall_10 = res["best_val_recall@10"]
             best_config = config
-            model.save_model(CHECKPOINT_DIR / "grid_best_implicit_mf.npz")
+            model.save_model(configs.BASELINE_MODEL_DIR)
 
-    with open(LOG_DIR / "grid_search_results.json", "w", encoding="utf-8") as f:
+    with open(configs.LOG_DIR / "grid_search_results.json", "w", encoding="utf-8") as f:
         json.dump(results, f, indent=4, ensure_ascii=False)
 
     if results:
         fieldnames = list(results[0].keys())
-        with open(LOG_DIR / "grid_search_results.csv", "w", newline="", encoding="utf-8") as f:
+        with open(configs.LOG_DIR / "grid_search_results.csv", "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(results)
@@ -104,7 +98,7 @@ def compare_with_diff_gamma():
     counts, items, val_data = prepare_for_train()
 
     base_model = ImplicitMF()
-    base_model.load_model(MODEL_WEIGHT_DIR)
+    base_model.load_model(configs.BASELINE_MODEL_DIR)
 
     print(
         f"Loaded Best Baseline:\n"
@@ -162,27 +156,29 @@ def compare_with_diff_gamma():
             f"ARP: {res['best_val_arp']:.2f}"
         )
 
-        model.save_model(CHECKPOINT_DIR / f"implicit_mf_gamma_{config['gamma']}.npz")
+        model.save_model(configs.CHECKPOINT_DIR / f"implicit_mf_gamma_{config['gamma']}.npz")
 
-    with open(LOG_DIR / "gamma_search_results.json", "w", encoding="utf-8") as f:
+    with open(configs.LOG_DIR / "gamma_search_results.json", "w", encoding="utf-8") as f:
         json.dump(results, f, indent=4, ensure_ascii=False)
 
     if results:
         fieldnames = list(results[0].keys())
-        with open(LOG_DIR / "gamma_search_results.csv", "w", newline="", encoding="utf-8") as f:
+        with open(configs.LOG_DIR / "gamma_search_results.csv", "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(results)
 
-    print("=====================")
+    print("===============================================================")
     print("Gamma Comparison Complete!")
     for r in results:
         print(
             f"gamma={r['gamma']:.2f} -> "
             f"R@10: {r['best_val_recall@10']:.6f} | ARP: {r['best_val_arp']:.2f}"
         )
-    print("=====================")
+    print("===============================================================")
+
 
 if __name__ == "__main__":
     #grid_serach()
-    compare_with_diff_gamma()
+    #compare_with_diff_gamma()
+    pass

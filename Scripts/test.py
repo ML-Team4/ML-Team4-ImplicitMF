@@ -10,11 +10,7 @@ import gc
 import csv
 import json
 
-
-CHECKPOINT_DIR = ROOT_DIR / "checkpoints"
-LOG_DIR = ROOT_DIR / "logs"
-LOG_DIR.mkdir(parents=True, exist_ok=True)
-GAMMA_LIST = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
+import configs
 
 def test():
     counts, items, test_data = prepare_for_test()
@@ -24,8 +20,8 @@ def test():
 
     results = []
     
-    for gamma in GAMMA_LIST:
-        weight_path = CHECKPOINT_DIR / f"implicit_mf_gamma_{gamma}.npz"
+    for gamma in configs.GAMMA_LIST:
+        weight_path = configs.CHECKPOINT_DIR / f"implicit_mf_gamma_{gamma}.npz"
 
         model = ImplicitMF()
         model.load_model(weight_path)
@@ -64,7 +60,7 @@ def test():
             f"ARP: {res['test_arp']:.2f}\n"
         )
 
-        # 다음 모델 로드 전 이전 잠재 행렬(k_dim=256) 메모리 해제
+        # 다음 모델 로드 전 이전 잠재 행렬 메모리 해제
         del model
         gc.collect()
 
@@ -82,20 +78,22 @@ def test():
         )
     print(f"=======================================================================================")
 
-    with open(LOG_DIR / "test_gamma_results.json", "w", encoding="utf-8") as f:
+    with open(configs.LOG_DIR / "test_gamma_results.json", "w", encoding="utf-8") as f:
         json.dump(results, f, indent=4, ensure_ascii=False)
 
     if results:
         with open(
-            LOG_DIR / "test_gamma_results.csv", "w", newline="", encoding="utf-8"
+            configs.LOG_DIR / "test_gamma_results.csv", "w", newline="", encoding="utf-8"
         ) as f:
             writer = csv.DictWriter(f, fieldnames=list(results[0].keys()))
             writer.writeheader()
             writer.writerows(results)
         plot_gamma_tradeoff(
             results=results,
-            save_path=LOG_DIR / "test_gamma_tradeoff.png"
+            save_path=configs.RESULT_DIR/ "test_gamma_tradeoff.png"
         )
 
 if __name__ == "__main__":
     test()
+    
+    
