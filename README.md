@@ -2,10 +2,21 @@
 
 ListenBrainz 청취 로그(유저 5,000명, 곡 1,525,005개)를 기반으로, Collaborative Filtering의 **인기 편향(Popularity Bias)을 완화** 하고 롱테일(Long-tail) 곡 추천 성능을 높이는 Implicit-MF 기반 음악 추천 시스템.
 
+> 모델 가중치 파일의 용량으로 인해, 이후에 추가한다. 
+
 ## Overview
 
 * **모델 구조:** ALS(Alternating Least Squares) 기반 Implicit Matrix Factorization 
 * **인기 편향 보정 (IPS):** 아이템별 청취자 수($P_i$)에 기반한 가중치($w_i \propto 1 / P_i^\gamma$)를 적용하여 인기곡 쏠림 현상을 제어하고 롱테일 아이템 노출을 확대
+
+- [Setup](#setup)
+- [Run](#run)
+- [성능평가](#성능-평가)
+    - [Baseline](#baseline)
+    - [Find gamma](#find)
+    - [Test set evaluation](#test-set-evaluation)   
+- [File info](#file-info)
+
 
 ## Setup
 
@@ -71,6 +82,8 @@ user_idx,gamma,rank,item_idx,title,artist,train_listener_count
 30,0.0,8,34133,The Sign,Ace of Base,57
 ```
 
+[-> 생성된 .md 파일](./results/recommendations.md)
+
 </details>
 
 ## 성능 평가
@@ -96,10 +109,24 @@ user_idx,gamma,rank,item_idx,title,artist,train_listener_count
 
 (소수점 6번째 자리에서 반올림하여 나타낸다.)
 
+각 학습 후의 $\gamma$ 에 따른 모델 가중치는 다음에 저장된다. 
+
+- `./checkpoints/implicit_mf_gamma_??.npz`
+
+(?? 는 $\gamma$ 값을 나타낸다.)
+
 <details>
 <summary>세부 지표 (원본)</summary>
 
-![](./logs/gamma_search_results.csv)
+```csv
+k_dim,alpha,gamma,reg_weight,iteration,random_state,top_k,best_epoch,best_val_recall@10,best_val_recall@50,best_val_recall@100,best_val_arp
+256,20.0,0.0,0.05,20,777,10,20,0.01438155506005899,0.04444773521776413,0.06800637177977403,86.22088220295768
+256,20.0,0.1,0.05,20,777,10,20,0.014270094359952853,0.04386056307663671,0.06856340047097632,80.99436511983683
+256,20.0,0.2,0.05,20,777,10,20,0.014317826325364543,0.04319724882271689,0.06693407547422253,76.181157572667
+256,20.0,0.3,0.05,20,777,10,20,0.01384708081487532,0.041852503033984266,0.06535268022538047,72.25331463539011
+256,20.0,0.4,0.05,20,777,10,20,0.013238765042888182,0.04161362371019395,0.06401691194145832,69.19153493115758
+256,20.0,0.5,0.05,20,777,10,15,0.01225692458757646,0.03853097636339763,0.06090012741862648,72.44931157572667
+```
 
 </details>
 
@@ -147,3 +174,34 @@ Validation 데이터셋을 통해 선정한 $\gamma = 0.2$ 모델을 테스트 �
 Validation 의 기준으로 $\gamma = 0.2$ 를 선정하였으나, 테스트 평가에서는 $\gamma = 0.2 \rightarrow 0.3$ 구간에서 `Recall@10` 이 거의 감소하지 않으면서, `ARP` 가 $-15.99$% 감소하는 것이 확인되었다. 즉, 실제 일반화 환경에서는 `Recall@10`-`ARP` trade-off 관점에서 $\gamma=0.3$ 이 이상적인 것으로 나타난다.  
 
 
+
+## File info
+
+- `./logs`
+
+| file | description |
+| :---: | :---: |
+| `grid_search_results.csv` | $\gamma = 0.0$ 고정 하에, Validation 데이터셋에서의 하이퍼 파라미터 조합 별 학습 성능 로그 |
+| `gamma_search_results.csv` | `grid_search_results.csv` 에서 산출한 최적의 하이퍼 파라미터 조합에 대해, $\gamma$ 별 학습 성능 로그 |
+| `test_gamma_results.csv` | 학습된 모델에 대해 Test 데이터셋에 대한 성능 로그 |
+
+- `./Scripts`
+
+| file | description |
+| :---: | :---: |
+| `load_datasets.py` | `Train`, `Validation`, `Test` 데이터셋을 불러와 반환 |
+| `implicit_mf.py` | Implicit-MF 모델 클래스 구현. 추천 및 성능 평가 method 포함 | 
+| `train.py` | 주어진 모델 구조에 대해, 하이퍼파라미터 조합 별 학습 후 `Validation` 데이터셋에서의 성능 지표 기록 및 `.csv` 저장 | 
+| `test.py` | 학습된 모델에 대해 `Test` 데이터셋에서의 성능 지표 기록 및 `.csv`, `.png`, `.md` 결과 저장 |
+
+- `./utils`
+
+| file | description |
+| :---: | :---: |
+| `utils.py` | 유용 함수 정의 | 
+
+- `./`
+
+| file | description |
+| :---: | :---: |
+| `configs.py` | 전역 변수 설정 | 
