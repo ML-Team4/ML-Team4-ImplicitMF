@@ -18,11 +18,7 @@ pip install -r requirements.txt
 
 ## Run
 
-## Baseline Exploration
 
-모델의 하이퍼파라미터는 `Validation` 데이터셋에서 진행한다. 
-
-`Recall@10` 을 기준으로 모델의 성능을 평가한다. 
 
 
 

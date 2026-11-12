@@ -1,16 +1,28 @@
-from scipy.sparse import csr_matrix, csc_matrix
+import os
+import sys
 from pathlib import Path
+
+os.environ["OPENBLAS_NUM_THREADS"] = "8"
+os.environ["MKL_NUM_THREADS"] = "8"
+os.environ["OPENMP_NUM_THREADS"] = "8"
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from utils.utils import parse_target_dict, parse_listener_counts
+
+from scipy.sparse import csr_matrix, csc_matrix
 import numpy as np
 import pyarrow as pa
 import csv
 import json
 import os
 # OpenBLAS, MKL, OpenMP 라이브러리에서 사용하는 스레드 수를 제한하여 CPU 사용량을 조절하고, 학습 속도를 향상시키기 위해 설정
-os.environ["OPENBLAS_NUM_THREADS"] = "8"
-os.environ["MKL_NUM_THREADS"] = "8"
-os.environ["OPENMP_NUM_THREADS"] = "8"
+
 import implicit 
 import time
+
 
 class ImplicitMF:
     """
@@ -59,51 +71,7 @@ class ImplicitMF:
             scale=scale, size=(num_items, self.k_dim)
         ).astype(np.float32)
 
-    def _parse_listener_counts(
-        self, items_dataset: pa.Table | np.ndarray | None
-    ) -> np.ndarray | None:
-        """_summary_
-            items.csv <- train_listener_count 추출 및 np.ndarray 변환
-        Args:
-            items_dataset (pa.Table | np.ndarray | None): items.csv
-
-        Returns:
-            np.ndarray | None: train_listener_count 1D array
-        """
-        if items_dataset is None:
-            return None
-        if isinstance(items_dataset, np.ndarray):
-            return items_dataset
-        if (
-            hasattr(items_dataset, "column_names")
-            and "train_listener_count" in items_dataset.column_names
-        ):
-            return items_dataset["train_listener_count"].to_numpy()
-        return np.asarray(items_dataset)
-
-    def _parse_target_dict(
-        self, targets: pa.Table | dict[int, set[int]]
-    ) -> dict[int, set[int]]:
-        """_summary_
-            targets PyArrow -> {user_idx: set(item_idx)} dict 으로 변환
-        Args:
-            targets (pa.Table | dict[int, set[int]]): PyArrow Table or dict
-
-        Returns:
-            dict[int, set[int]]: {user_idx: set(item_idx)} dict
-        """
-        if isinstance(targets, dict):
-            return targets
-
-        target_u = targets["user_idx"].to_numpy()
-        target_i = targets["item_idx"].to_numpy()
-
-        target_dict = {}
-        for u, i in zip(target_u, target_i):
-            if u not in target_dict:
-                target_dict[u] = set()
-            target_dict[u].add(i)
-        return target_dict
+    
 
     def _update_users_als(self, D_csr: csr_matrix):
         """_summary_
@@ -188,11 +156,11 @@ class ImplicitMF:
         self._initialize_latent_matrix(num_users, num_items)
 
         # validation set parsing
-        train_listener_counts = self._parse_listener_counts(items_dataset)
+        train_listener_counts = parse_listener_counts(items_dataset)
         val_users, val_target_dict = None, None
         if val_data is not None:
             val_users, val_targets_table = val_data
-            val_target_dict = self._parse_target_dict(val_targets_table)
+            val_target_dict = parse_target_dict(val_targets_table)
 
         # 행렬을 COO(Coordinate) 로 변환해서 user, item, listen_count 1D 배열 추출
         coo = counts.tocoo()
@@ -247,12 +215,12 @@ class ImplicitMF:
 
             # ALS 방식으로 유저/아이템 잠재 행렬 업데이트
             if self.use_implicit_als:
-                self._update_users_als(D_csr)
-                self._update_items_als(D_csc)
-            else:
                 als_engine.fit(user_item_csr, show_progress=False)
                 self.user_latent_matrix = np.asarray(als_engine.user_factors)
                 self.item_latent_matrix = np.asarray(als_engine.item_factors)
+            else:
+                self._update_users_als(D_csr)
+                self._update_items_als(D_csc)
 
             # t_fit: ALS 학습 소요 시간
             t_fit = time.time() - t0
@@ -322,13 +290,15 @@ class ImplicitMF:
         if self.user_latent_matrix is None or self.item_latent_matrix is None:
             raise ValueError()
 
+        u_mat = np.asarray(self.user_latent_matrix, dtype=np.float32)
+        i_mat = np.asarray(self.item_latent_matrix, dtype=np.float32)
+
         is_single = isinstance(user_idx, (int, np.integer))
 
         if is_single:
             # calculate scores: (k_dim,) @ (num_items, k_dim)^T -> (num_items,)
             # 개별 유저를 대상으로 진행
-            u_emb = self.user_latent_matrix[user_idx]
-            scores = u_emb @ self.item_latent_matrix.T
+            scores = u_mat[user_idx] @ i_mat.T
         
             # 학습 데이터에서 이미 상호작용한 아이템은 추천 후보에서 제외 -> score를 -inf로 설정
             if train_seen is not None and len(train_seen) > 0:
@@ -346,23 +316,19 @@ class ImplicitMF:
         else:
             # (batch_size, k_dim) @ (num_items, k_dim)^T -> (batch_size, num_items)
             batch_users = np.asarray(user_idx)
-            scores_batch = (
-                self.user_latent_matrix[batch_users] @ self.item_latent_matrix.T
-            )
+            scores_batch = u_mat[batch_users] @ i_mat.T
 
             # 학습 데이터에서 이미 상호작용한 아이템은 추천 후보에서 제외 -> score를 -inf로 설정
             if train_seen is not None:
                 if isinstance(train_seen, csr_matrix):
-                    for idx, u in enumerate(batch_users):
-                        seen = train_seen.getrow(u).indices
-                        if len(seen) > 0:
-                            scores_batch[idx, seen] = -np.inf
+                    sub_csr = train_seen[batch_users]
+                    row_lengths = np.diff(sub_csr.indptr)
+                    seen_rows = np.repeat(np.arange(len(batch_users)), row_lengths)
+                    scores_batch[seen_rows, sub_csr.indices] = -np.inf
                 elif isinstance(train_seen, (list, tuple)):
                     for idx, seen in enumerate(train_seen):
                         if len(seen) > 0:
-                            seen_idx = (
-                                list(seen) if isinstance(seen, set) else seen
-                            )
+                            seen_idx = list(seen) if isinstance(seen, set) else seen
                             scores_batch[idx, seen_idx] = -np.inf
 
             # Top-K
@@ -382,7 +348,7 @@ class ImplicitMF:
         train_counts: csr_matrix,
         train_listener_counts: np.ndarray,
         top_ks: list[int] = [10, 50, 100],
-        user_batch_size: int = 32,
+        user_batch_size: int = 256,
     ) -> tuple[float, float]:
         """_summary_
         1. eligible_users: 평가 대상 유저 인덱스 배열
@@ -400,11 +366,20 @@ class ImplicitMF:
         if self.user_latent_matrix is None or self.item_latent_matrix is None:
             raise ValueError()
 
+        valid_users = np.array(
+            [u for u in eligible_users if target_dict.get(int(u))],
+            dtype=eligible_users.dtype,
+        )
+        num_users = len(valid_users)
+        if num_users == 0:
+            metrics = {f"recall@{k}": 0.0 for k in top_ks}
+            metrics["arp"] = 0.0
+            return metrics
+        
         max_k = max(top_ks)
         recalls = {k: [] for k in top_ks}
-        arps = []
-        num_users = len(eligible_users)
-
+        batch_arps = []
+        
         # 유저 배치 단위로 추천 수행
         for start_idx in range(0, num_users, user_batch_size):
             end_idx = min(start_idx + user_batch_size, num_users)
@@ -414,26 +389,24 @@ class ImplicitMF:
                 user_idx=batch_users, train_seen=train_counts, top_k=max_k
             )
 
-            # 각 유저별 Recall@K, ARP 계산
-            for idx, u in enumerate(batch_users):
-                truth = target_dict.get(u, set())
-                if not truth:
-                    continue
+            batch_arps.append(
+                train_listener_counts[batch_top_items[:, :10]].mean(axis=1)
+            )
 
+            for idx, u in enumerate(batch_users):
+                truth = target_dict[int(u)]
                 top_max_sorted = batch_top_items[idx]
+                cum_hits = np.cumsum([item in truth for item in top_max_sorted])
+                n_truth = len(truth)
 
                 for k in top_ks:
-                    top_k_items = top_max_sorted[:k]
-                    hits = len(set(top_k_items) & truth)
-                    recalls[k].append(hits / len(truth))
-
-                arps.append(np.mean(train_listener_counts[top_max_sorted[:10]]))
+                    recalls[k].append(cum_hits[k - 1] / n_truth)
 
         metrics = {
             f"recall@{k}": float(np.mean(recalls[k])) if recalls[k] else 0.0
             for k in top_ks
         }
-        metrics["arp"] = float(np.mean(arps)) if arps else 0.0
+        metrics["arp"] = float(np.concatenate(batch_arps).mean())
 
         return metrics
     
