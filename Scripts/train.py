@@ -12,6 +12,9 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def grid_serach():
+    """_summary_
+    Grid Search를 수행하여 ImplicitMF 모델의 최적 하이퍼파라미터를 탐색 (validation set 기준)
+    """
     datasets = load_data()
     counts = datasets["counts"]
     items = datasets["items"]
@@ -20,7 +23,7 @@ def grid_serach():
     param_grid = {
         "k_dim": [64, 128, 256],         
         "alpha": [10.0, 20.0, 40.0],     
-        "gamma": [0.0],   
+        "gamma": [0.0],   # baseline 에서는 0.0으로 고정, 이후 최적의 baseline 찾은 후에 gamma 변화별 편향 조정 여부 확인
         "reg_weight": [0.001, 0.01, 0.05], 
         "iteration": [20],               
         "random_state": [777],
@@ -66,7 +69,7 @@ def grid_serach():
             f"R@100: {res['best_val_recall@100']:.6f}"
         )
 
-        # 역대 최고 Recall@10 달성 시 체크포인트 저장
+        # 최고 Recall@10 달성 시 체크포인트 저장
         if res["best_val_recall@10"] > best_recall_10:
             best_recall_10 = res["best_val_recall@10"]
             best_config = config
@@ -83,7 +86,7 @@ def grid_serach():
             writer.writerows(results)
 
     print("=====================")
-    print(f" Best R@10: {best_recall_10:.6f}")
+    print(f"Best R@10: {best_recall_10:.6f}")
     print(f"Best Config: {best_config}")
     print("=====================")
 
