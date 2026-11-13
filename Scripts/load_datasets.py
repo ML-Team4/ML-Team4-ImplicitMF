@@ -20,8 +20,6 @@ def load_data() -> dict:
     train = read(
         "train_interactions.csv",{"user_idx": pa.int32(),"item_idx": pa.int32(), "listen_count": pa.int64()}, )
     counts = csr_matrix((train["listen_count"].to_numpy(),(train["user_idx"].to_numpy(),train["item_idx"].to_numpy())),shape=(users.num_rows, items.num_rows))
-    print("사용자 × 곡", counts.shape, "학습 쌍", counts.nnz,
-        "청취 횟수 합", int(counts.sum()))
 
     # 모델이 추천한 공통 item_idx를 곡명·아티스트명으로 조회한다.
     recommended_item_idx = [0, 1, 2]  # 실행 예시 인덱스; 실제 모델의 추천 결과로 교체
@@ -43,9 +41,6 @@ def load_data() -> dict:
         truth = set(target_i[target_u == user_idx].tolist())
         train_seen = set(counts.getrow(user_idx).indices.tolist())
         assert truth.isdisjoint(train_seen)
-        # 추천 점수 배열 scores에 scores[list(train_seen)] = -np.inf 적용 후 Top-10 선택
-        print(period, "사용자", len(eligible), "정답 쌍", targets.num_rows,
-            "첫 사용자 정답", len(truth), "후보", counts.shape[1] - len(train_seen))
 
     return {
         "users": users,

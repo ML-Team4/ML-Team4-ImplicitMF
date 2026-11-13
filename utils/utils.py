@@ -1,7 +1,6 @@
 from Scripts.load_datasets import load_data
 import pyarrow as pa
 import numpy as np
-import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 from pathlib import Path

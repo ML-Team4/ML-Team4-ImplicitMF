@@ -22,7 +22,8 @@ import os
 
 import implicit 
 import time
-
+import urllib.request
+import configs
 
 class ImplicitMF:
     """
@@ -475,9 +476,8 @@ class ImplicitMF:
         """
         filepath = Path(filepath)
         if not filepath.exists():
-            raise FileNotFoundError(
-                f"no file exist: {filepath}"
-            )
+            filepath.parent.mkdir(parents=True, exist_ok=True)
+            urllib.request.urlretrieve(f"{configs.RELEASE_URL}/{filepath.name}", filepath)
 
         data = np.load(filepath)
         self.user_latent_matrix = data["user_latent_matrix"]

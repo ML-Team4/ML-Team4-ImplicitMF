@@ -16,7 +16,7 @@ import csv
 import gc
 import numpy as np
 import pyarrow as pa
-
+import urllib.request
 import configs
 
 CHECKPOINT_DIR = ROOT_DIR / "checkpoints"
@@ -106,9 +106,9 @@ def recommend_for_gamma(
 def main():
     parser = argparse.ArgumentParser(description="ImplicitMF (IPS 편향 보정 적용) 음악 추천 CLI")
     parser.add_argument("--user_idx", type=int, nargs="+", default=[0], help="추천 대상 유저 인덱스")
-    parser.add_argument("--gamma", type=float, default=0.2, help="IPS 편향 보정 강도 (기본값: 0.2)")
+    parser.add_argument("--gamma", type=float, default=0.2, help="IPS 편향 보정 강도")
     parser.add_argument("--compare", action="store_true", help="Baseline(0.0)과 지정 gamma 비교")
-    parser.add_argument("--top_k", type=int, default=10, help="추천 곡 수 (기본값: 10)")
+    parser.add_argument("--top_k", type=int, default=10, help="추천 곡 수")
     args = parser.parse_args()
 
     counts, items, _ = prepare_for_test()

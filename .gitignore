@@ -1,11 +1,8 @@
 
-datasets/
+datasets/listenbrainz-preprocessing
 datasets/*.csv
-*.zip
-*.gz
 
-
-checkpoints/
+checkpoints/*.npz
 #logs/
 
 __pycache__/

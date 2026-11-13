@@ -2,7 +2,9 @@
 
 ListenBrainz 청취 로그(유저 5,000명, 곡 1,525,005개)를 기반으로, Collaborative Filtering의 **인기 편향(Popularity Bias)을 완화** 하고 롱테일(Long-tail) 곡 추천 성능을 높이는 Implicit-MF 기반 음악 추천 시스템.
 
-> 모델 가중치 파일의 용량으로 인해, 이후에 추가한다. 
+> ~~모델 가중치 파일의 용량으로 인해, 이후에 추가한다.~~
+> 
+
 
 ## Overview
 
@@ -31,6 +33,16 @@ source .venv/bin/activate
 # 패키지 설치
 pip install -r requirements.txt
 ```
+
+데이터셋은 마찬가지로 `./datasets/listenbrainz-preprocessing.zip` 를 동일 폴더 경로 `./datasets/` 로 압축을 풀어 준비한다.  
+
+```bash
+unzip datasets/listenbrainz-preprocessing.zip -d datasets
+```
+
+모델 파일은 이후 안내할 방법으로 실행 시 자동으로 `checkpoints/` 경로에 다운이 된다. (Baseline 모델과, $\gamma = 0.2$ 모델만 지원한다.)
+
+만약 자동으로 다운이 되지 않는다면, 수동으로 Release 에서 `implicit_mf_gamma_{??}.npz` 를 다운 받아 사용할 수 있다. 
 
 ## Run
 
