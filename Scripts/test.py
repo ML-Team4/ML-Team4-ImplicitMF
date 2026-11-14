@@ -205,9 +205,9 @@ def main():
     parser.add_argument(
         "--mode",
         type=str,
-        default="final",
-        choices=["final", "single", "sweep"],
-        help="실행 모드 (final: Baseline vs 최종 모델 1:1 비교, single: 단일 모델 평가, sweep: 전체 gamma 민감도 분석)",
+        default="compare",
+        choices=["compare", "single", "sweep"],
+        help="실행 모드 (compare: Baseline vs 최종 모델 1:1 비교, single: 단일 모델 평가, sweep: 전체 gamma 민감도 분석)",
     )
     parser.add_argument("--gamma", type=float, default=0.2, help="평가할 대상 gamma 값")
     parser.add_argument("--baseline_gamma", type=float, default=0.0, help="비교 기준 Baseline gamma 값 (compare)")
