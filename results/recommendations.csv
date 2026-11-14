@@ -1,41 +1,11 @@
 ﻿user_idx,gamma,rank,item_idx,title,artist,train_listener_count
-30,0.0,1,649225,PRIDE.,Kendrick Lamar,77
-30,0.0,2,480118,On Melancholy Hill,Gorillaz,165
-30,0.0,3,455295,Runaway (U & I),Galantis,58
-30,0.0,4,1136098,oh yeah?,Steve Lacy,148
-30,0.0,5,174680,Livin’ on a Prayer,Bon Jovi,147
-30,0.0,6,1440996,undressed,sombr,74
-30,0.0,7,1229265,"Steady, as She Goes",The Raconteurs,53
-30,0.0,8,34133,The Sign,Ace of Base,57
-30,0.0,9,342476,Jolene,Dolly Parton,183
-30,0.0,10,547068,The Passenger,Iggy Pop,80
-40,0.0,1,715120,In the End,Linkin Park,330
-40,0.0,2,803342,Nothing Else Matters,Metallica,127
-40,0.0,3,715249,Numb,Linkin Park,322
-40,0.0,4,715514,What I’ve Done,Linkin Park,201
-40,0.0,5,492538,Sweet Child o’ Mine,Guns N’ Roses,172
-40,0.0,6,1067619,Wind of Change,Scorpions,96
-40,0.0,7,714963,Crawling,Linkin Park,194
-40,0.0,8,715019,Faint,Linkin Park,270
-40,0.0,9,400017,Bring Me to Life,Evanescence,247
-40,0.0,10,174680,Livin’ on a Prayer,Bon Jovi,147
-30,0.2,1,97022,i like the way you kiss me,Artemas,124
-30,0.2,2,1176258,Trigger Warning,Technimatic,2
-30,0.2,3,296658,The Wizard,Danny Brown,1
-30,0.2,4,682416,1995-07-16: BBC Radio 1 Essential Mix,LTJ Bukem,1
-30,0.2,5,477425,Malice In Wonderland,Goldie Presents Rufige Kru,1
-30,0.2,6,772917,Universe,Marcus Intalex & ST Files,1
-30,0.2,7,803163,Enter Sandman,Metallica,159
-30,0.2,8,989383,Creep,Radiohead,302
-30,0.2,9,1440996,undressed,sombr,74
-30,0.2,10,455295,Runaway (U & I),Galantis,58
-40,0.2,1,1067619,Wind of Change,Scorpions,96
-40,0.2,2,803342,Nothing Else Matters,Metallica,127
-40,0.2,3,872601,How You Remind Me,Nickelback,149
-40,0.2,4,174680,Livin’ on a Prayer,Bon Jovi,147
-40,0.2,5,638183,Dust in the Wind,Kansas,80
-40,0.2,6,715019,Faint,Linkin Park,270
-40,0.2,7,715514,What I’ve Done,Linkin Park,201
-40,0.2,8,174652,It’s My Life,Bon Jovi,87
-40,0.2,9,492538,Sweet Child o’ Mine,Guns N’ Roses,172
-40,0.2,10,715262,One Step Closer,Linkin Park,226
+60,0.2,1,1188554,Here Comes the Sun,The Beatles,146
+60,0.2,2,273331,Girls Just Want to Have Fun,Cyndi Lauper,89
+60,0.2,3,1269567,Africa,Toto,170
+60,0.2,4,807109,Billie Jean,Michael Jackson,265
+60,0.2,5,1175443,Everybody Wants to Rule the World,Tears for Fears,240
+60,0.2,6,1227279,Every Breath You Take,The Police,163
+60,0.2,7,1239546,Happy Together,The Turtles,57
+60,0.2,8,1188899,Nowhere Man,The Beatles,44
+60,0.2,9,1188674,In My Life,The Beatles,64
+60,0.2,10,1188727,I’ve Got a Feeling,The Beatles,24

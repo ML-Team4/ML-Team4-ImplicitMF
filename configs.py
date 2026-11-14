@@ -15,4 +15,4 @@ RESULT_DIR.mkdir(parents=True, exist_ok=True)
 
 GAMMA_LIST = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
 
-RELEASE_URL = "https://github.com/<아이디>/<저장소명>/releases/download/<태그명>"
+RELEASE_URL = "https://github.com/ML-Team4/ML-Team4-ImplicitMF/releases/download/v1.0-models"

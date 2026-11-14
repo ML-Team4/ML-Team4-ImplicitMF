@@ -1,18 +1,71 @@
+import os
+import sys
+from pathlib import Path
+
+os.environ["OPENBLAS_NUM_THREADS"] = "8"
+os.environ["MKL_NUM_THREADS"] = "8"
+os.environ["OPENMP_NUM_THREADS"] = "8"
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
 from implicit_mf import ImplicitMF
-from load_datasets import load_data
 import csv
 import json
 from itertools import product
+from utils.utils import prepare_for_train
+import argparse
 
 import configs
 
-def prepare_for_train():
-    datasets = load_data()
-    counts = datasets["counts"]
-    items = datasets["items"]
-    val_data = datasets["evaluation"]["validation"]
+def train_single(
+    k_dim: int = 64,
+    alpha: float = 40.0,
+    gamma: float = 0.0,
+    reg_weight: float = 0.01,
+    iteration: int = 20,
+    patience: int = 5,
+    random_state: int = 777,
+    top_k: int = 10,
+    save_path: str | Path | None = None,
+):
+    counts, items, val_data = prepare_for_train()
 
-    return counts, items, val_data
+    model = ImplicitMF(
+        k_dim=k_dim,
+        alpha=alpha,
+        gamma=gamma,
+        reg_weight=reg_weight,
+        iteration=iteration,
+        random_state=random_state,
+        top_k=top_k,
+    )
+    model.train(
+        counts=counts,
+        items_dataset=items,
+        val_data=val_data,
+        patience=patience,
+    )
+
+    best_epoch_log = max(model.history, key=lambda x: x.get("recall@10", 0.0))
+    print(
+        f"[Single Train Complete] Best Epoch: {best_epoch_log['epoch']} | "
+        f"R@10: {best_epoch_log.get('recall@10', 0.0):.6f} | "
+        f"R@50: {best_epoch_log.get('recall@50', 0.0):.6f} | "
+        f"R@100: {best_epoch_log.get('recall@100', 0.0):.6f} | "
+        f"ARP: {best_epoch_log.get('arp', 0.0):.2f}"
+    )
+
+    target_path = (
+        Path(save_path)
+        if save_path
+        else configs.CHECKPOINT_DIR / f"implicit_mf_k{k_dim}_a{alpha}_g{gamma}.npz"
+    )
+    model.save_model(target_path)
+    print(f"Model saved to: {target_path}")
+
+    return model, best_epoch_log
 
 def grid_serach():
     """_summary_
@@ -85,10 +138,10 @@ def grid_serach():
             writer.writeheader()
             writer.writerows(results)
 
-    print("=====================")
+    print("===============================================================")
     print(f"Best R@10: {best_recall_10:.6f}")
     print(f"Best Config: {best_config}")
-    print("=====================")
+    print("===============================================================")
 
 def compare_with_diff_gamma():
     """
@@ -177,8 +230,43 @@ def compare_with_diff_gamma():
         )
     print("===============================================================")
 
+def main():
+    parser = argparse.ArgumentParser(description="ImplicitMF train API / CLI")
+    parser.add_argument(
+        "--mode",
+        type=str,
+        default="single",
+        choices=["single", "grid", "gamma"],
+        help="실행 모드 선택 (single: 단일 파라미터 학습, grid: 베이스라인 탐색, gamma: 편향 보정 비교)",
+    )
+    parser.add_argument("--k_dim", type=int, default=64, help="잠재 벡터 차원 수")
+    parser.add_argument("--alpha", type=float, default=40.0, help="신뢰도 스케일링 계수")
+    parser.add_argument("--gamma", type=float, default=0.0, help="인기도 편향 보정 강도")
+    parser.add_argument("--reg_weight", type=float, default=0.01, help="L2 정규화 계수")
+    parser.add_argument("--iteration", type=int, default=20, help="최대 학습 에포크 수")
+    parser.add_argument("--patience", type=int, default=5, help="조기 종료 patience")
+    parser.add_argument("--random_state", type=int, default=777, help="난수 시드")
+    parser.add_argument("--top_k", type=int, default=10, help="기본 Top-K 개수")
+    parser.add_argument("--save_path", type=str, default=None, help="single 모드 모델 저장 경로")
+    
+    args = parser.parse_args()
+    
+    if args.mode == "single":
+        train_single(
+            k_dim=args.k_dim,
+            alpha=args.alpha,
+            gamma=args.gamma,
+            reg_weight=args.reg_weight,
+            iteration=args.iteration,
+            patience=args.patience,
+            random_state=args.random_state,
+            top_k=args.top_k,
+            save_path=args.save_path,
+        )
+    elif args.mode == "grid":
+        grid_serach()
+    elif args.mode == "gamma":
+        compare_with_diff_gamma()
 
 if __name__ == "__main__":
-    #grid_serach()
-    #compare_with_diff_gamma()
-    pass
+    main()

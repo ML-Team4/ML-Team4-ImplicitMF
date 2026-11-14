@@ -264,12 +264,14 @@ class ImplicitMF:
                     patience_count += 1
                     if patience_count >= patience:
                         print(f"\n[Early Stopping]")
-                        self.user_latent_matrix = best_user_emb
-                        self.item_latent_matrix = best_item_emb
                         break
             else:
                 print(f"Epoch {epoch:02d}/{self.iteration:02d} complete")
 
+        if best_user_emb is not None and best_item_emb is not None:
+            self.user_latent_matrix = best_user_emb
+            self.item_latent_matrix = best_item_emb
+        
         return self
 
     def recommend(
@@ -477,8 +479,9 @@ class ImplicitMF:
         filepath = Path(filepath)
         if not filepath.exists():
             filepath.parent.mkdir(parents=True, exist_ok=True)
+            print(f"Downloading {filepath.name}")
             urllib.request.urlretrieve(f"{configs.RELEASE_URL}/{filepath.name}", filepath)
-
+        
         data = np.load(filepath)
         self.user_latent_matrix = data["user_latent_matrix"]
         self.item_latent_matrix = data["item_latent_matrix"]

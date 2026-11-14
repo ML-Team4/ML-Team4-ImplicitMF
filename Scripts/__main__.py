@@ -16,7 +16,6 @@ import csv
 import gc
 import numpy as np
 import pyarrow as pa
-import urllib.request
 import configs
 
 CHECKPOINT_DIR = ROOT_DIR / "checkpoints"
@@ -57,8 +56,6 @@ def recommend_for_gamma(
     top_k: int,
 ) -> tuple[dict[int, list[dict]], list[dict]]:
     weight_path = configs.CHECKPOINT_DIR / f"implicit_mf_gamma_{gamma}.npz"
-    if not weight_path.exists():
-        raise FileNotFoundError(f"no file exists: {weight_path}")
 
     model = ImplicitMF()
     model.load_model(weight_path)

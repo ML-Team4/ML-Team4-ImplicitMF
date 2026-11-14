@@ -11,13 +11,18 @@ ListenBrainz 청취 로그(유저 5,000명, 곡 1,525,005개)를 기반으로, C
 * **모델 구조:** ALS(Alternating Least Squares) 기반 Implicit Matrix Factorization 
 * **인기 편향 보정 (IPS):** 아이템별 청취자 수($P_i$)에 기반한 가중치($w_i \propto 1 / P_i^\gamma$)를 적용하여 인기곡 쏠림 현상을 제어하고 롱테일 아이템 노출을 확대
 
-- [Setup](#setup)
-- [Run](#run)
-- [성능평가](#성능-평가)
+- [ML-Team4-ImplicitMF](#ml-team4-implicitmf)
+  - [Overview](#overview)
+  - [Setup](#setup)
+  - [Run](#run)
+    - [추천 결과](#추천-결과)
+    - [학습](#학습)
+    - [평가](#평가)
+  - [성능 평가](#성능-평가)
     - [Baseline](#baseline)
-    - [Find gamma](#find)
-    - [Test set evaluation](#test-set-evaluation)   
-- [File info](#file-info)
+    - [Find $\\gamma$](#find-gamma)
+    - [Test set evaluation](#test-set-evaluation)
+  - [File info](#file-info)
 
 
 ## Setup
@@ -45,6 +50,8 @@ unzip datasets/listenbrainz-preprocessing.zip -d datasets
 만약 자동으로 다운이 되지 않는다면, 수동으로 Release 에서 `implicit_mf_gamma_{??}.npz` 를 다운 받아 사용할 수 있다. 
 
 ## Run
+
+### 추천 결과 
 
 저장된 `.npz` 모델 파일을 불러와 특정 유저의 학습 기간 청취 이력과 Top-K 추천 결과를 출력한다. 
 
@@ -97,6 +104,50 @@ user_idx,gamma,rank,item_idx,title,artist,train_listener_count
 [-> 생성된 .md 파일](./results/recommendations.md)
 
 </details>
+
+### 학습  
+
+자체적으로 각 목적에 맞게 다음을 수행하여 학습을 진행할 수 있다. 
+
+```bash
+# 단일 모델 학습
+python Scripts/train.py --mode single --k_dim [k_dim] --alpha [alpha] --gamma [gamma] --reg_weight [reg_weight]
+
+# 전체 Grid Search 실행
+python Scripts/train.py --mode grid
+
+# 최적 모델 기준 Gamma 비교 실행
+python Scripts/train.py --mode gamma
+```
+
+- 단일 모델 학습: 설정된 하이퍼파라미터로 학습을 진행
+- 전체 Grid Search: $\gamma = 0$ 편향 무보정에서의 최적의 baseline 탐색
+- Gamma 비교 실행: 주어진 baseline 의 하이퍼파라미터를 고정한 채, $\gamma \in [0.0, 0.5]$ 에 따라 학습을 진행
+
+### 평가 
+
+학습된 모델에 대하여, 다음을 통해 Recall@10, ARP 를 평가할 수 있다. 
+
+- Baseline vs 최종 선정 모델($\gamma = 0.2$) 1:1 평가
+
+```bash
+python Scripts/test.py --mode compare
+```
+
+- 특정 $\gamma$ 체크포인트 파일 평가
+
+``` bash
+python Scripts/test.py --mode single --gamma 0.2
+
+# 또는 경로 직접 지정
+python Scripts/test.py --mode single --weight_path checkpoints/implicit_mf_gamma_0.2.npz
+```
+
+- 전체 $\gamma \in [0.0, 0.5]$ 에 대해 평가 및 그래프/로그 저장
+
+``` bash
+python Scripts/test.py --mode sweep
+```
 
 ## 성능 평가
 
@@ -183,9 +234,9 @@ Validation 데이터셋을 통해 선정한 $\gamma = 0.2$ 모델을 테스트 �
 
 ![](./results/test_gamma_tradeoff.png)
 
-Validation 의 기준으로 $\gamma = 0.2$ 를 선정하였으나, 테스트 평가에서는 $\gamma = 0.2 \rightarrow 0.3$ 구간에서 `Recall@10` 이 거의 감소하지 않으면서, `ARP` 가 $-15.99$% 감소하는 것이 확인되었다. 즉, 실제 일반화 환경에서는 `Recall@10`-`ARP` trade-off 관점에서 $\gamma=0.3$ 이 이상적인 것으로 나타난다.  
+Validation 기준으로 선정한 최종 모델 ($\gamma = 0.2$) 의 Test 평가 결과, Baseline ($\gamma = 0$) 대비 `Recall@10` 은 $+2.68$% ($0.01269 \rightarrow$ 0.01303) 향상되었고, `ARP`는 $-11.46$% ($85.95 \rightarrow 76.10$) 으로 감소하여, 정확도와 편향 완화 모두 개선되는 것을 확인하였다.  
 
-
+추가적으로 Test 데이터에 대해, $\gamma = 0.2 \rightarrow 0.3$ 구간에서도 `Recall@10` 수치가 거의 유지되면서, Baseline 대비 `ARP` 가 $-15.99$% ($72.21$) 까지 추가적으로 완화되는 것을 관찰하였다. 이는 미관측 일반화 환경에서는 편향 보정의 유효범위가, $\gamma = 0.3$ 수준까지 확장될 수 있음을 나타낸다.  
 
 ## File info
 
